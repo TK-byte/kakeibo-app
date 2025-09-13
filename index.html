@@ -1,339 +1,265 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>年間家計比較ダッシュボード</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#2d3748 0%,#4a5568 100%);min-height:100vh;color:#2d3748}
-        .header{background:linear-gradient(135deg,#1a202c 0%,#2d3748 100%);color:#fff;padding:30px 20px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.1)}
-        .header h1{font-size:2.5rem;margin-bottom:10px;font-weight:700}
-        .header p{opacity:.8;font-size:1.1rem}
-        .year-selector{background:#fff;padding:20px;margin:20px;border-radius:15px;box-shadow:0 4px 6px rgba(0,0,0,.1);text-align:center}
-        .year-buttons{display:flex;justify-content:center;gap:15px;flex-wrap:wrap}
-        .year-btn{background:linear-gradient(135deg,#4299e1 0%,#3182ce 100%);color:#fff;border:none;padding:12px 24px;border-radius:25px;cursor:pointer;font-size:16px;font-weight:600;transition:.3s;min-width:100px}
-        .year-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(66,153,225,.4)}
-        .year-btn.active{background:linear-gradient(135deg,#38a169 0%,#2f855a 100%)}
-        .container{max-width:1400px;margin:0 auto;padding:20px}
-        .dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(600px,1fr));gap:30px}
-        .category-section{background:#fff;border-radius:20px;box-shadow:0 8px 25px rgba(0,0,0,.1);overflow:hidden;transition:transform .3s}
-        .category-section:hover{transform:translateY(-5px)}
-        .category-header{padding:25px 30px;color:#fff;text-align:center;position:relative;overflow:hidden}
-        .category-header::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transition:left .5s}
-        .category-section:hover .category-header::before{left:100%}
-        .food-header{background:linear-gradient(135deg,#ff6b6b 0%,#ee5a52 100%)}
-        .electric-header{background:linear-gradient(135deg,#feca57 0%,#ff9f43 100%)}
-        .gas-header{background:linear-gradient(135deg,#48cae4 0%,#0077b6 100%)}
-        .water-header{background:linear-gradient(135deg,#4ecdc4 0%,#44a08d 100%)}
-        .category-header h2{font-size:1.8rem;margin-bottom:8px;font-weight:700}
-        .category-header .icon{font-size:2.5rem;margin-bottom:10px;display:block}
-        .category-content{padding:30px}
-        .chart-container{position:relative;height:350px;margin-bottom:25px}
-        .monthly-data{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-top:20px}
-        .month-card{background:#f8fafc;border-radius:12px;padding:20px;text-align:center;border:2px solid transparent;transition:.3s;position:relative;overflow:hidden}
-        .month-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#4299e1,#3182ce);transform:scaleX(0);transition:.3s}
-        .month-card:hover{transform:translateY(-3px);box-shadow:0 8px 25px rgba(0,0,0,.15);border-color:#4299e1}
-        .month-card:hover::before{transform:scaleX(1)}
-        .month-name{font-size:.9rem;color:#718096;font-weight:600;margin-bottom:10px;text-transform:uppercase}
-        .current-year{font-size:1.6rem;font-weight:700;color:#2d3748;margin-bottom:8px}
-        .previous-year{font-size:1.1rem;color:#718096;margin-bottom:8px}
-        .comparison{display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:600;margin-top:10px}
-        .increase{color:#e53e3e}.decrease{color:#38a169}.same{color:#718096}
-        .loading{text-align:center;padding:40px;color:#718096}
-        .error{background:#fed7d7;color:#9b2c2c;padding:20px;border-radius:10px;margin:20px;text-align:center}
-        .summary-stats{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:25px;border-radius:15px;margin:30px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
-        .stat-item{text-align:center}.stat-value{font-size:2rem;font-weight:700;margin-bottom:5px}.stat-label{font-size:.9rem;opacity:.9}
-        @media (max-width:768px){.dashboard{grid-template-columns:1fr}.header h1{font-size:2rem}.monthly-data{grid-template-columns:repeat(2,1fr)}.year-buttons{flex-direction:column;align-items:center}}
-        @media (max-width:480px){.monthly-data{grid-template-columns:1fr}.container{padding:10px}}
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>年間家計比較ダッシュボード</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#2d3748 0%,#4a5568 100%);min-height:100vh;color:#2d3748}
+    .header{background:linear-gradient(135deg,#1a202c 0%,#2d3748 100%);color:#fff;padding:30px 20px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.1)}
+    .header h1{font-size:2.5rem;margin-bottom:10px;font-weight:700}
+    .header p{opacity:.8;font-size:1.1rem}
+    .year-selector{background:#fff;padding:20px;margin:20px;border-radius:15px;box-shadow:0 4px 6px rgba(0,0,0,.1);text-align:center}
+    .year-buttons{display:flex;justify-content:center;gap:15px;flex-wrap:wrap}
+    .year-btn{background:linear-gradient(135deg,#4299e1 0%,#3182ce 100%);color:#fff;border:none;padding:12px 24px;border-radius:25px;cursor:pointer;font-size:16px;font-weight:600;transition:.3s;min-width:100px}
+    .year-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(66,153,225,.4)}
+    .year-btn.active{background:linear-gradient(135deg,#38a169 0%,#2f855a 100%)}
+    .container{max-width:1400px;margin:0 auto;padding:20px}
+    .dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(600px,1fr));gap:30px}
+    .category-section{background:#fff;border-radius:20px;box-shadow:0 8px 25px rgba(0,0,0,.1);overflow:hidden;transition:transform .3s}
+    .category-section:hover{transform:translateY(-5px)}
+    .category-header{padding:25px 30px;color:#fff;text-align:center;position:relative;overflow:hidden}
+    .category-header::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transition:left .5s}
+    .category-section:hover .category-header::before{left:100%}
+    .food-header{background:linear-gradient(135deg,#ff6b6b 0%,#ee5a52 100%)}
+    .electric-header{background:linear-gradient(135deg,#feca57 0%,#ff9f43 100%)}
+    .gas-header{background:linear-gradient(135deg,#48cae4 0%,#0077b6 100%)}
+    .water-header{background:linear-gradient(135deg,#4ecdc4 0%,#44a08d 100%)}
+    .category-header h2{font-size:1.8rem;margin-bottom:8px;font-weight:700}
+    .category-header .icon{font-size:2.5rem;margin-bottom:10px;display:block}
+    .category-content{padding:30px}
+    .chart-container{position:relative;height:420px} /* 少し大きめに */
+    .loading{text-align:center;padding:40px;color:#718096}
+    .error{background:#fed7d7;color:#9b2c2c;padding:20px;border-radius:10px;margin:20px;text-align:center}
+    .summary-stats{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:25px;border-radius:15px;margin:30px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+    .stat-item{text-align:center}.stat-value{font-size:2rem;font-weight:700;margin-bottom:5px}.stat-label{font-size:.9rem;opacity:.9}
+    @media (max-width:768px){.dashboard{grid-template-columns:1fr}.header h1{font-size:2rem}}
+  </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📊 年間家計比較ダッシュボード</h1>
-        <p>GoogleSpreadsheet連携 - 光熱費・食費の前年比較分析</p>
+  <div class="header">
+    <h1>📊 年間家計比較ダッシュボード</h1>
+    <p>GoogleSpreadsheet連携 - 光熱費・食費の前年比較分析</p>
+  </div>
+
+  <div class="year-selector">
+    <h3 style="margin-bottom:15px;color:#2d3748;">表示年度を選択</h3>
+    <div class="year-buttons" id="yearButtons"></div>
+  </div>
+
+  <div class="summary-stats" id="summaryStats" style="display:none;">
+    <div class="stat-item"><div class="stat-value" id="totalCurrentYear">¥0</div><div class="stat-label">今年度総支出</div></div>
+    <div class="stat-item"><div class="stat-value" id="totalPreviousYear">¥0</div><div class="stat-label">前年度総支出</div></div>
+    <div class="stat-item"><div class="stat-value" id="averageMonthly">¥0</div><div class="stat-label">月平均支出</div></div>
+    <div class="stat-item"><div class="stat-value" id="yearlyComparison">0%</div><div class="stat-label">前年比</div></div>
+  </div>
+
+  <div class="container">
+    <div id="loadingMessage" class="loading">
+      <h3>📈 データを読み込み中...</h3>
+      <p>GoogleSpreadsheetからデータを取得しています</p>
+    </div>
+    <div id="errorMessage" class="error" style="display:none;">
+      <h3>❌ データの読み込みに失敗しました</h3>
+      <p>GoogleSpreadsheetの設定を確認してください</p>
     </div>
 
-    <div class="year-selector">
-        <h3 style="margin-bottom: 15px; color: #2d3748;">表示年度を選択</h3>
-        <div class="year-buttons" id="yearButtons"></div>
+    <div class="dashboard" id="dashboard" style="display:none;">
+      <!-- 食費 -->
+      <div class="category-section">
+        <div class="category-header food-header">
+          <span class="icon">🍽️</span><h2>食費</h2>
+        </div>
+        <div class="category-content">
+          <div class="chart-container"><canvas id="foodChart"></canvas></div>
+        </div>
+      </div>
+      <!-- 電気代 -->
+      <div class="category-section">
+        <div class="category-header electric-header">
+          <span class="icon">⚡</span><h2>電気代</h2>
+        </div>
+        <div class="category-content">
+          <div class="chart-container"><canvas id="electricChart"></canvas></div>
+        </div>
+      </div>
+      <!-- ガス代 -->
+      <div class="category-section">
+        <div class="category-header gas-header">
+          <span class="icon">🔥</span><h2>ガス代</h2>
+        </div>
+        <div class="category-content">
+          <div class="chart-container"><canvas id="gasChart"></canvas></div>
+        </div>
+      </div>
+      <!-- 水道代 -->
+      <div class="category-section">
+        <div class="category-header water-header">
+          <span class="icon">💧</span><h2>水道代</h2>
+        </div>
+        <div class="category-content">
+          <div class="chart-container"><canvas id="waterChart"></canvas></div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div class="summary-stats" id="summaryStats" style="display: none;">
-        <div class="stat-item">
-            <div class="stat-value" id="totalCurrentYear">¥0</div>
-            <div class="stat-label">今年度総支出</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-value" id="totalPreviousYear">¥0</div>
-            <div class="stat-label">前年度総支出</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-value" id="averageMonthly">¥0</div>
-            <div class="stat-label">月平均支出</div>
-        </div>
-        <div class="stat-item">
-            <div class="stat-value" id="yearlyComparison">0%</div>
-            <div class="stat-label">前年比</div>
-        </div>
-    </div>
+  <script>
+    class HouseholdDashboard {
+      constructor() {
+        this.CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-kxUoOhW4-dUlEexnx-eL-NnVu6gM3BAXEc91sn66UEFQKzFzv1BscDWsu4EVl5fTc9g16zMvAyWj/pub?output=csv';
+        this.data={};
+        this.currentYear=new Date().getFullYear();
+        this.charts={};
+        this.categories={
+          food:{name:'食費',color:'#ff6b6b'},
+          electric:{name:'電気代',color:'#feca57'},
+          gas:{name:'ガス代',color:'#48cae4'},
+          water:{name:'水道代',color:'#4ecdc4'}
+        };
+        this.months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+        this.init();
+      }
+      toNumber(str){return Number(String(str).replace(/[^\d.-]/g,''))||0;}
+      yen(a){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY'}).format(a);}
 
-    <div class="container">
-        <div id="loadingMessage" class="loading">
-            <h3>📈 データを読み込み中...</h3>
-            <p>GoogleSpreadsheetからデータを取得しています</p>
-        </div>
-        
-        <div id="errorMessage" class="error" style="display: none;">
-            <h3>❌ データの読み込みに失敗しました</h3>
-            <p>GoogleSpreadsheetの設定を確認してください</p>
-        </div>
+      async init(){
+        try{
+          await this.loadFromCSV();
+          this.setupYearSelector();
+          const years=Object.keys(this.data).map(Number);
+          if(years.length) this.currentYear=Math.max(...years);
+          this.displayData(this.currentYear);
+          this.hideLoading();
+        }catch(e){console.error(e);this.showError();}
+      }
 
-        <div class="dashboard" id="dashboard" style="display: none;">
-            <!-- 食費 -->
-            <div class="category-section">
-                <div class="category-header food-header">
-                    <span class="icon">🍽️</span>
-                    <h2>食費</h2>
-                </div>
-                <div class="category-content">
-                    <div class="chart-container"><canvas id="foodChart"></canvas></div>
-                    <div class="monthly-data" id="foodMonthlyData"></div>
-                </div>
-            </div>
-            <!-- 電気代 -->
-            <div class="category-section">
-                <div class="category-header electric-header">
-                    <span class="icon">⚡</span>
-                    <h2>電気代</h2>
-                </div>
-                <div class="category-content">
-                    <div class="chart-container"><canvas id="electricChart"></canvas></div>
-                    <div class="monthly-data" id="electricMonthlyData"></div>
-                </div>
-            </div>
-            <!-- ガス代 -->
-            <div class="category-section">
-                <div class="category-header gas-header">
-                    <span class="icon">🔥</span>
-                    <h2>ガス代</h2>
-                </div>
-                <div class="category-content">
-                    <div class="chart-container"><canvas id="gasChart"></canvas></div>
-                    <div class="monthly-data" id="gasMonthlyData"></div>
-                </div>
-            </div>
-            <!-- 水道代 -->
-            <div class="category-section">
-                <div class="category-header water-header">
-                    <span class="icon">💧</span>
-                    <h2>水道代</h2>
-                </div>
-                <div class="category-content">
-                    <div class="chart-container"><canvas id="waterChart"></canvas></div>
-                    <div class="monthly-data" id="waterMonthlyData"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        class HouseholdDashboard {
-            constructor() {
-                this.CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-kxUoOhW4-dUlEexnx-eL-NnVu6gM3BAXEc91sn66UEFQKzFzv1BscDWsu4EVl5fTc9g16zMvAyWj/pub?output=csv';
-                this.data = {};
-                this.currentYear = new Date().getFullYear();
-                this.charts = {};
-                this.categories = {
-                    food:    { name: '食費',   color: '#ff6b6b' },
-                    electric:{ name: '電気代', color: '#feca57' },
-                    gas:     { name: 'ガス代', color: '#48cae4' },
-                    water:   { name: '水道代', color: '#4ecdc4' }
-                };
-                this.months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-                this.init();
-            }
-
-            toNumber(str) {
-                return Number(String(str).replace(/[^\d.-]/g, '')) || 0;
-            }
-
-            yen(amount) {
-                return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount);
-            }
-
-            async init() {
-                try {
-                    await this.loadFromCSV();
-                    this.setupYearSelector();
-                    const years = Object.keys(this.data).map(Number);
-                    if (years.length) this.currentYear = Math.max(...years);
-                    this.displayData(this.currentYear);
-                    this.hideLoading();
-                } catch (e) {
-                    console.error(e);
-                    this.showError();
-                }
-            }
-
-            parseCSV(text) {
-                const rows = [];
-                let row = [], cell = '', inQuotes = false;
-                for (let i = 0; i < text.length; i++) {
-                    const c = text[i], n = text[i+1];
-                    if (inQuotes) {
-                        if (c === '"' && n === '"') { cell += '"'; i++; }
-                        else if (c === '"') { inQuotes = false; }
-                        else { cell += c; }
-                    } else {
-                        if (c === '"') inQuotes = true;
-                        else if (c === ',') { row.push(cell); cell = ''; }
-                        else if (c === '\n' || c === '\r') {
-                            if (c === '\r' && n === '\n') i++;
-                            row.push(cell); rows.push(row);
-                            row = []; cell = '';
-                        } else { cell += c; }
-                    }
-                }
-                if (cell.length || inQuotes || row.length) { row.push(cell); rows.push(row); }
-                return rows.filter(r => r.length && r.some(v => v !== ''));
-            }
-
-            async loadFromCSV() {
-                const res = await fetch(this.CSV_URL, { cache: 'no-store' });
-                if (!res.ok) throw new Error('CSV取得失敗');
-                const csv = await res.text();
-                const rows = this.parseCSV(csv);
-                let start = 0;
-                if (rows.length && isNaN(parseInt(rows[0][0]))) start = 1;
-                const data = {};
-                for (let i = start; i < rows.length; i++) {
-                    const [year, month, food, electric, gas, water] = rows[i];
-                    const y = parseInt(year), m = parseInt(month);
-                    if (!y || !m) continue;
-                    if (!data[y]) data[y] = {};
-                    data[y][m] = {
-                        food:     this.toNumber(food),
-                        electric: this.toNumber(electric),
-                        gas:      this.toNumber(gas),
-                        water:    this.toNumber(water)
-                    };
-                }
-                this.data = data;
-            }
-
-            setupYearSelector() {
-                const yearButtons = document.getElementById('yearButtons');
-                yearButtons.innerHTML = '';
-                const availableYears = Object.keys(this.data).map(Number).sort((a,b)=>b-a);
-                availableYears.forEach(year => {
-                    const btn = document.createElement('button');
-                    btn.className = 'year-btn' + (year === this.currentYear ? ' active':'');
-                    btn.textContent = `${year}年`;
-                    btn.addEventListener('click', (e) => this.selectYear(year, e));
-                    yearButtons.appendChild(btn);
-                });
-            }
-
-            selectYear(year, e) {
-                this.currentYear = year;
-                document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
-                if (e && e.currentTarget) e.currentTarget.classList.add('active');
-                this.displayData(year);
-            }
-
-            displayData(year) {
-                this.updateSummaryStats(year);
-                this.createCharts(year);
-                this.createMonthlyCards(year);
-            }
-
-            updateSummaryStats(year) {
-                const cur = this.data[year] || {};
-                const prev = this.data[year-1] || {};
-                let totalCur = 0, totalPrev = 0;
-                for (let m=1;m<=12;m++) {
-                    if (cur[m])  totalCur  += Object.values(cur[m]).reduce((s,v)=>s+v,0);
-                    if (prev[m]) totalPrev += Object.values(prev[m]).reduce((s,v)=>s+v,0);
-                }
-                const avg = totalCur/12;
-                const pct = totalPrev>0 ? ((totalCur-totalPrev)/totalPrev*100) : 0;
-                document.getElementById('totalCurrentYear').textContent = this.yen(totalCur);
-                document.getElementById('totalPreviousYear').textContent = this.yen(totalPrev);
-                document.getElementById('averageMonthly').textContent = this.yen(Math.round(avg));
-                const el = document.getElementById('yearlyComparison');
-                el.textContent = `${pct>0?'+':''}${pct.toFixed(1)}%`;
-                el.style.color = pct>0 ? '#e53e3e' : '#38a169';
-                document.getElementById('summaryStats').style.display = 'grid';
-            }
-
-            createCharts(year) {
-                Object.keys(this.categories).forEach(cat => this.createCategoryChart(cat, year));
-            }
-
-            createCategoryChart(category, year) {
-                const ctx = document.getElementById(`${category}Chart`).getContext('2d');
-                if (this.charts[category]) this.charts[category].destroy();
-                const cur = [], prev = [];
-                for (let m=1;m<=12;m++) {
-                    cur.push(this.data[year]?.[m]?.[category] || 0);
-                    prev.push(this.data[year-1]?.[m]?.[category] || 0);
-                }
-                const color = this.categories[category].color;
-                this.charts[category] = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: this.months,
-                        datasets: [
-                            { label: `${year}年`,   data: cur,  backgroundColor: color,    borderColor: color,    borderWidth: 2, borderRadius: 8, borderSkipped: false },
-                            { label: `${year-1}年`, data: prev, backgroundColor: color+'80',borderColor: color,    borderWidth: 1, borderRadius: 8, borderSkipped: false }
-                        ]
-                    },
-                    options: {
-                        responsive:true, maintainAspectRatio:false,
-                        plugins:{ legend:{ position:'top', labels:{ usePointStyle:true, padding:20 } } },
-                        scales:{
-                            y:{ beginAtZero:true, ticks:{ callback:(v)=>this.yen(v) }, grid:{ color:'#f1f5f9' } },
-                            x:{ grid:{ display:false } }
-                        },
-                        interaction:{ intersect:false, mode:'index' }
-                    }
-                });
-            }
-
-            createMonthlyCards(year) {
-                Object.keys(this.categories).forEach(cat => this.createCategoryMonthlyCards(cat, year));
-            }
-
-            createCategoryMonthlyCards(category, year) {
-                const container = document.getElementById(`${category}MonthlyData`);
-                container.innerHTML = '';
-                for (let m=1;m<=12;m++) {
-                    const cur = this.data[year]?.[m]?.[category] || 0;
-                    const prev = this.data[year-1]?.[m]?.[category] || 0;
-                    const card = document.createElement('div');
-                    card.className = 'month-card';
-
-                    let cls='same', text='前年同月', icon='➡️';
-                    if (cur>prev){ cls='increase'; text=`+${this.yen(cur-prev)}`; icon='📈'; }
-                    else if (cur<prev){ cls='decrease'; text=`-${this.yen(prev-cur)}`; icon='📉'; }
-
-                    card.innerHTML = `
-                        <div class="month-name">${this.months[m-1]}</div>
-                        <div class="current-year">${this.yen(cur)}</div>
-                        <div class="previous-year">前年: ${this.yen(prev)}</div>
-                        <div class="comparison ${cls}">${icon} ${text}</div>
-                    `;
-                    container.appendChild(card);
-                }
-            }
-
-            hideLoading(){ document.getElementById('loadingMessage').style.display='none'; document.getElementById('dashboard').style.display='grid'; }
-            showError(){ document.getElementById('loadingMessage').style.display='none'; document.getElementById('errorMessage').style.display='block'; }
+      parseCSV(text){
+        const rows=[];let row=[],cell='',inQuotes=false;
+        for(let i=0;i<text.length;i++){
+          const c=text[i],n=text[i+1];
+          if(inQuotes){
+            if(c==='"'&&n==='"'){cell+='"';i++;}
+            else if(c==='"'){inQuotes=false;}
+            else{cell+=c;}
+          }else{
+            if(c==='"') inQuotes=true;
+            else if(c===','){row.push(cell);cell='';}
+            else if(c==='\n'||c==='\r'){if(c==='\r'&&n==='\n') i++;row.push(cell);rows.push(row);row=[];cell='';}
+            else{cell+=c;}
+          }
         }
+        if(cell.length||inQuotes||row.length){row.push(cell);rows.push(row);}
+        return rows.filter(r=>r.length&&r.some(v=>v!==''));
+      }
 
-        window.addEventListener('DOMContentLoaded', () => new HouseholdDashboard());
-    </script>
+      async loadFromCSV(){
+        const res=await fetch(this.CSV_URL,{cache:'no-store'});
+        if(!res.ok) throw new Error('CSV取得失敗');
+        const csv=await res.text();
+        const rows=this.parseCSV(csv);
+        let start=0;if(rows.length&&isNaN(parseInt(rows[0][0]))) start=1;
+        const data={};
+        for(let i=start;i<rows.length;i++){
+          const [year,month,food,electric,gas,water]=rows[i];
+          const y=parseInt(year),m=parseInt(month);
+          if(!y||!m) continue;
+          if(!data[y]) data[y]={};
+          data[y][m]={
+            food:this.toNumber(food),
+            electric:this.toNumber(electric),
+            gas:this.toNumber(gas),
+            water:this.toNumber(water)
+          };
+        }
+        this.data=data;
+      }
+
+      setupYearSelector(){
+        const yearButtons=document.getElementById('yearButtons');
+        yearButtons.innerHTML='';
+        const years=Object.keys(this.data).map(Number).sort((a,b)=>b-a);
+        years.forEach(year=>{
+          const btn=document.createElement('button');
+          btn.className='year-btn'+(year===this.currentYear?' active':'');
+          btn.textContent=`${year}年`;
+          btn.addEventListener('click',(e)=>this.selectYear(year,e));
+          yearButtons.appendChild(btn);
+        });
+      }
+
+      selectYear(year,e){
+        this.currentYear=year;
+        document.querySelectorAll('.year-btn').forEach(b=>b.classList.remove('active'));
+        if(e&&e.currentTarget) e.currentTarget.classList.add('active');
+        this.displayData(year);
+      }
+
+      displayData(year){
+        this.updateSummaryStats(year);
+        this.createCharts(year);
+      }
+
+      updateSummaryStats(year){
+        const cur=this.data[year]||{};
+        const prev=this.data[year-1]||{};
+        let totalCur=0,totalPrev=0;
+        for(let m=1;m<=12;m++){
+          if(cur[m])  totalCur += Object.values(cur[m]).reduce((s,v)=>s+v,0);
+          if(prev[m]) totalPrev+= Object.values(prev[m]).reduce((s,v)=>s+v,0);
+        }
+        const avg=totalCur/12;
+        const pct=totalPrev>0?((totalCur-totalPrev)/totalPrev*100):0;
+        document.getElementById('totalCurrentYear').textContent=this.yen(totalCur);
+        document.getElementById('totalPreviousYear').textContent=this.yen(totalPrev);
+        document.getElementById('averageMonthly').textContent=this.yen(Math.round(avg));
+        const el=document.getElementById('yearlyComparison');
+        el.textContent=`${pct>0?'+':''}${pct.toFixed(1)}%`;
+        el.style.color=pct>0?'#e53e3e':'#38a169';
+        document.getElementById('summaryStats').style.display='grid';
+      }
+
+      createCharts(year){
+        Object.keys(this.categories).forEach(cat=>this.createCategoryChart(cat,year));
+      }
+
+      createCategoryChart(category,year){
+        const ctx=document.getElementById(`${category}Chart`).getContext('2d');
+        if(this.charts[category]) this.charts[category].destroy();
+        const cur=[],prev=[];
+        for(let m=1;m<=12;m++){
+          cur.push(this.data[year]?.[m]?.[category]||0);
+          prev.push(this.data[year-1]?.[m]?.[category]||0);
+        }
+        const color=this.categories[category].color;
+        this.charts[category]=new Chart(ctx,{
+          type:'bar',
+          data:{
+            labels:this.months,
+            datasets:[
+              {label:`${year}年`,data:cur,backgroundColor:color,borderColor:color,borderWidth:2,borderRadius:8,borderSkipped:false},
+              {label:`${year-1}年`,data:prev,backgroundColor:color+'80',borderColor:color,borderWidth:1,borderRadius:8,borderSkipped:false}
+            ]
+          },
+          options:{
+            responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:20}}},
+            scales:{
+              y:{beginAtZero:true,ticks:{callback:(v)=>this.yen(v)},grid:{color:'#f1f5f9'}},
+              x:{grid:{display:false}}
+            },
+            interaction:{intersect:false,mode:'index'}
+          }
+        });
+      }
+
+      hideLoading(){document.getElementById('loadingMessage').style.display='none';document.getElementById('dashboard').style.display='grid';}
+      showError(){document.getElementById('loadingMessage').style.display='none';document.getElementById('errorMessage').style.display='block';}
+    }
+
+    window.addEventListener('DOMContentLoaded',()=>new HouseholdDashboard());
+  </script>
 </body>
 </html>
