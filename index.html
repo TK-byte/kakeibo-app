@@ -20,7 +20,11 @@
     .dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(600px,1fr));gap:30px}
     .category-section{background:#fff;border-radius:20px;box-shadow:0 8px 25px rgba(0,0,0,.1);overflow:hidden;transition:transform .3s}
     .category-section:hover{transform:translateY(-5px)}
-    .category-header{padding:25px 30px;color:#fff;text-align:center;position:relative;overflow:hidden}
+    .category-header{padding:25px 30px;color:#fff;position:relative;overflow:hidden; display:flex; align-items:center; justify-content:space-between; text-align:left}
+    .header-left{ display:flex; align-items:center; gap:12px; } /* ← 追加 */
+    .category-header .icon{ font-size:2.2rem; margin:0; display:block; } /* 既存を微調整 */
+    .header-meta{ text-align:right; font-weight:700; line-height:1.35; } /* ← 追加 */
+    .header-meta small{ display:block; opacity:.9; font-weight:600; }     /* ← 追加 */
     .category-header::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);transition:left .5s}
     .category-section:hover .category-header::before{left:100%}
     .food-header{background:linear-gradient(135deg,#ff6b6b 0%,#ee5a52 100%)}
@@ -72,7 +76,7 @@
         <div class="category-header food-header">
           <span class="icon">🍽️</span><h2>食費</h2>
         </div>
-        <div class="category-content">
+        <div class="header-meta" id="foodMeta"><small>計算中…</small></div>
           <div class="chart-container"><canvas id="foodChart"></canvas></div>
         </div>
       </div>
@@ -81,7 +85,7 @@
         <div class="category-header electric-header">
           <span class="icon">⚡</span><h2>電気代</h2>
         </div>
-        <div class="category-content">
+        <div class="header-meta" id="electricMeta"><small>計算中…</small></div>
           <div class="chart-container"><canvas id="electricChart"></canvas></div>
         </div>
       </div>
@@ -90,7 +94,7 @@
         <div class="category-header gas-header">
           <span class="icon">🔥</span><h2>ガス代</h2>
         </div>
-        <div class="category-content">
+        <div class="header-meta" id="gasMeta"><small>計算中…</small></div>
           <div class="chart-container"><canvas id="gasChart"></canvas></div>
         </div>
       </div>
@@ -99,7 +103,7 @@
         <div class="category-header water-header">
           <span class="icon">💧</span><h2>水道代</h2>
         </div>
-        <div class="category-content">
+        <div class="header-meta" id="waterMeta"><small>計算中…</small></div>
           <div class="chart-container"><canvas id="waterChart"></canvas></div>
         </div>
       </div>
@@ -124,6 +128,42 @@
       }
       toNumber(str){return Number(String(str).replace(/[^\d.-]/g,''))||0;}
       yen(a){return new Intl.NumberFormat('ja-JP',{style:'currency',currency:'JPY'}).format(a);}
+
+      // 今年のデータが入っている最後の月を取得（なければ12）
+      getMaxMonth(year){
+        const cur = this.data[year] || {};
+        let max = 0;
+        for(let m=1;m<=12;m++){
+            if(cur[m] && Object.values(cur[m]).some(v=>v!==undefined)) max = m;
+        }
+        return max || 12;
+       }
+
+        // 指定カテゴリのYTD平均（前年比の基準に合わせる：1〜maxMonthで割る）
+       getYtdAverages(category, year){
+        const maxMonth = this.getMaxMonth(year);
+        let curSum = 0, prevSum = 0;
+        for(let m=1;m<=maxMonth;m++){
+            curSum  += this.data[year]?.[m]?.[category]    || 0;
+            prevSum += this.data[year-1]?.[m]?.[category]  || 0;
+        }
+        const curAvg  = curSum  / maxMonth;
+        const prevAvg = prevSum / maxMonth;
+        return { curAvg, prevAvg, maxMonth };
+        }
+
+        // ヘッダー右側に表示
+       updateCategoryMeta(category, year){
+        const { curAvg, prevAvg, maxMonth } = this.getYtdAverages(category, year);
+        const el = document.getElementById(`${category}Meta`);
+        if(!el) return;
+        el.innerHTML = `
+            <small>1〜${maxMonth}月 平均</small>
+            <div>${(year-1)}年: ${this.yen(Math.round(prevAvg))}</div>
+            <div>${year}年: ${this.yen(Math.round(curAvg))}</div>
+        `;
+        }
+
 
       async init(){
         try{
@@ -246,8 +286,9 @@
       }
 
       createCategoryChart(category, year) {
-  const ctx = document.getElementById(`${category}Chart`).getContext('2d');
-  if (this.charts[category]) this.charts[category].destroy();
+        this.updateCategoryMeta(category, year);
+        const ctx = document.getElementById(`${category}Chart`).getContext('2d');
+        if (this.charts[category]) this.charts[category].destroy();
 
   const cur = [], prev = [];
   for (let m = 1; m <= 12; m++) {
