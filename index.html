@@ -225,35 +225,80 @@
         Object.keys(this.categories).forEach(cat=>this.createCategoryChart(cat,year));
       }
 
-      createCategoryChart(category,year){
-        const ctx=document.getElementById(`${category}Chart`).getContext('2d');
-        if(this.charts[category]) this.charts[category].destroy();
-        const cur=[],prev=[];
-        for(let m=1;m<=12;m++){
-          cur.push(this.data[year]?.[m]?.[category]||0);
-          prev.push(this.data[year-1]?.[m]?.[category]||0);
+      createCategoryChart(category, year) {
+  const ctx = document.getElementById(`${category}Chart`).getContext('2d');
+  if (this.charts[category]) this.charts[category].destroy();
+
+  const cur = [], prev = [];
+  for (let m = 1; m <= 12; m++) {
+    cur.push(this.data[year]?.[m]?.[category] || 0);
+    prev.push(this.data[year - 1]?.[m]?.[category] || 0);
+  }
+  const color = this.categories[category].color;
+
+  this.charts[category] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: this.months,
+      // ← データセット順を「前年度 → 今年度」に
+      datasets: [
+        { // 左側（前年度）
+          label: `${year - 1}年`,
+          data: prev,
+          backgroundColor: color + '80',
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false
+        },
+        { // 右側（今年度）
+          label: `${year}年`,
+          data: cur,
+          backgroundColor: color,
+          borderColor: color,
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false
         }
-        const color=this.categories[category].color;
-        this.charts[category]=new Chart(ctx,{
-          type:'bar',
-          data:{
-            labels:this.months,
-            datasets:[
-              {label:`${year}年`,data:cur,backgroundColor:color,borderColor:color,borderWidth:2,borderRadius:8,borderSkipped:false},
-              {label:`${year-1}年`,data:prev,backgroundColor:color+'80',borderColor:color,borderWidth:1,borderRadius:8,borderSkipped:false}
-            ]
-          },
-          options:{
-            responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{position:'top',labels:{usePointStyle:true,padding:20}}},
-            scales:{
-              y:{beginAtZero:true,ticks:{callback:(v)=>this.yen(v)},grid:{color:'#f1f5f9'}},
-              x:{grid:{display:false}}
-            },
-            interaction:{intersect:false,mode:'index'}
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { usePointStyle: true, padding: 20 }
+        },
+        // ツールチップはフル金額（円）で見せたい場合
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.y || 0;
+              const yen = new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(v);
+              return `${ctx.dataset.label}: ${yen}`;
+            }
           }
-        });
-      }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          // ← 目盛を「千円」表示に
+          ticks: {
+            callback: (v) => `${(v / 1000).toLocaleString()} 千円`,
+            // モバイルで横幅を確保したい場合はフォントサイズも少し小さく
+            // font: (ctx) => (window.innerWidth < 480 ? { size: 10 } : {})
+          },
+          grid: { color: '#f1f5f9' }
+        },
+        x: { grid: { display: false } }
+      },
+      interaction: { intersect: false, mode: 'index' }
+    }
+  });
+}
+
 
       hideLoading(){document.getElementById('loadingMessage').style.display='none';document.getElementById('dashboard').style.display='grid';}
       showError(){document.getElementById('loadingMessage').style.display='none';document.getElementById('errorMessage').style.display='block';}
