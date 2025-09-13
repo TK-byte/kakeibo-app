@@ -74,36 +74,51 @@
       <!-- 食費 -->
       <div class="category-section">
         <div class="category-header food-header">
-          <span class="icon">🍽️</span><h2>食費</h2>
+            <div class="header-left">
+            <span class="icon">🍽️</span>
+            <h2>食費</h2>
+            </div>
+            <div class="header-meta" id="foodMeta"><small>計算中…</small></div>
         </div>
-        <div class="header-meta" id="foodMeta"><small>計算中…</small></div>
-          <div class="chart-container"><canvas id="foodChart"></canvas></div>
+        <div class="category-content">
+            <div class="chart-container"><canvas id="foodChart"></canvas></div>
         </div>
       </div>
       <!-- 電気代 -->
       <div class="category-section">
         <div class="category-header electric-header">
-          <span class="icon">⚡</span><h2>電気代</h2>
+            <div class="header-left">
+            <span class="icon">⚡</span>
+            <h2>電気代</h2>
         </div>
-        <div class="header-meta" id="electricMeta"><small>計算中…</small></div>
+            <div class="header-meta" id="electricMeta"><small>計算中…</small></div>
+        </div>
+          <div class="category-content">
           <div class="chart-container"><canvas id="electricChart"></canvas></div>
         </div>
       </div>
       <!-- ガス代 -->
       <div class="category-section">
         <div class="category-header gas-header">
-          <span class="icon">🔥</span><h2>ガス代</h2>
+          <div class="header-left">
+          <span class="icon">🔥</span>
+          <h2>ガス代</h2>
         </div>
-        <div class="header-meta" id="gasMeta"><small>計算中…</small></div>
+            <div class="header-meta" id="gasMeta"><small>計算中…</small></div>
+        </div>
+        <div class="category-content">
           <div class="chart-container"><canvas id="gasChart"></canvas></div>
         </div>
       </div>
       <!-- 水道代 -->
       <div class="category-section">
         <div class="category-header water-header">
+          <div class="header-left">
           <span class="icon">💧</span><h2>水道代</h2>
         </div>
-        <div class="header-meta" id="waterMeta"><small>計算中…</small></div>
+            <div class="header-meta" id="waterMeta"><small>計算中…</small></div>
+        </div>
+        <div class="category-content">
           <div class="chart-container"><canvas id="waterChart"></canvas></div>
         </div>
       </div>
@@ -154,15 +169,37 @@
 
         // ヘッダー右側に表示
        updateCategoryMeta(category, year){
-        const { curAvg, prevAvg, maxMonth } = this.getYtdAverages(category, year);
+        const baseMonth = this.getDisplayBaseMonth(year); // ← アクセス月まで
+        const { curAvg, prevAvg } = this.getAveragesUpTo(category, year, baseMonth);
         const el = document.getElementById(`${category}Meta`);
         if(!el) return;
         el.innerHTML = `
-            <small>1〜${maxMonth}月 平均</small>
-            <div>${(year-1)}年: ${this.yen(Math.round(prevAvg))}</div>
+            <small>1〜${baseMonth}月 平均</small>
+            <div>${year-1}年: ${this.yen(Math.round(prevAvg))}</div>
             <div>${year}年: ${this.yen(Math.round(curAvg))}</div>
         `;
         }
+
+    
+        // 今年を表示中なら「アクセスした月」、それ以外は 12 ヶ月
+        getDisplayBaseMonth(year){
+        const now = new Date();
+        return (year === now.getFullYear()) ? (now.getMonth() + 1) : 12;
+        }
+
+        // 指定カテゴリの「1〜baseMonth」の月平均を計算（今年/昨年で同じ月数）
+        getAveragesUpTo(category, year, baseMonth){
+        let curSum = 0, prevSum = 0;
+        for(let m=1; m<=baseMonth; m++){
+            curSum  += this.data[year]?.[m]?.[category]   || 0;
+            prevSum += this.data[year-1]?.[m]?.[category] || 0;
+        }
+        return {
+            curAvg:  curSum  / baseMonth,
+            prevAvg: prevSum / baseMonth
+        };
+        }
+
 
 
       async init(){
