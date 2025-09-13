@@ -6,7 +6,6 @@
     <title>年間家計比較ダッシュボード</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
-        /* （スタイルはそのまま） */
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#2d3748 0%,#4a5568 100%);min-height:100vh;color:#2d3748}
         .header{background:linear-gradient(135deg,#1a202c 0%,#2d3748 100%);color:#fff;padding:30px 20px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,.1)}
@@ -142,10 +141,8 @@
     <script>
         class HouseholdDashboard {
             constructor() {
-                // 公開CSVのURL（あなたのURL）
                 this.CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-kxUoOhW4-dUlEexnx-eL-NnVu6gM3BAXEc91sn66UEFQKzFzv1BscDWsu4EVl5fTc9g16zMvAyWj/pub?output=csv';
-
-                this.data = {}; // { year: { month: {food,electric,gas,water} } }
+                this.data = {};
                 this.currentYear = new Date().getFullYear();
                 this.charts = {};
                 this.categories = {
@@ -158,11 +155,18 @@
                 this.init();
             }
 
+            toNumber(str) {
+                return Number(String(str).replace(/[^\d.-]/g, '')) || 0;
+            }
+
+            yen(amount) {
+                return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount);
+            }
+
             async init() {
                 try {
                     await this.loadFromCSV();
                     this.setupYearSelector();
-                    // データに存在する年のうち、最新を初期表示
                     const years = Object.keys(this.data).map(Number);
                     if (years.length) this.currentYear = Math.max(...years);
                     this.displayData(this.currentYear);
@@ -173,7 +177,6 @@
                 }
             }
 
-            // シンプルCSVパーサ（引用符とカンマを考慮）
             parseCSV(text) {
                 const rows = [];
                 let row = [], cell = '', inQuotes = false;
@@ -202,11 +205,8 @@
                 if (!res.ok) throw new Error('CSV取得失敗');
                 const csv = await res.text();
                 const rows = this.parseCSV(csv);
-
-                // ヘッダー検出（1行目をスキップ）
                 let start = 0;
                 if (rows.length && isNaN(parseInt(rows[0][0]))) start = 1;
-
                 const data = {};
                 for (let i = start; i < rows.length; i++) {
                     const [year, month, food, electric, gas, water] = rows[i];
@@ -214,13 +214,12 @@
                     if (!y || !m) continue;
                     if (!data[y]) data[y] = {};
                     data[y][m] = {
-                        food:     parseInt(food)    || 0,
-                        electric: parseInt(electric)|| 0,
-                        gas:      parseInt(gas)     || 0,
-                        water:    parseInt(water)   || 0
+                        food:     this.toNumber(food),
+                        electric: this.toNumber(electric),
+                        gas:      this.toNumber(gas),
+                        water:    this.toNumber(water)
                     };
                 }
-                if (!Object.keys(data).length) throw new Error('CSVに有効データがありません');
                 this.data = data;
             }
 
@@ -254,17 +253,15 @@
                 const cur = this.data[year] || {};
                 const prev = this.data[year-1] || {};
                 let totalCur = 0, totalPrev = 0;
-
                 for (let m=1;m<=12;m++) {
                     if (cur[m])  totalCur  += Object.values(cur[m]).reduce((s,v)=>s+v,0);
                     if (prev[m]) totalPrev += Object.values(prev[m]).reduce((s,v)=>s+v,0);
                 }
                 const avg = totalCur/12;
                 const pct = totalPrev>0 ? ((totalCur-totalPrev)/totalPrev*100) : 0;
-
-                document.getElementById('totalCurrentYear').textContent = `¥${totalCur.toLocaleString()}`;
-                document.getElementById('totalPreviousYear').textContent = `¥${totalPrev.toLocaleString()}`;
-                document.getElementById('averageMonthly').textContent = `¥${Math.round(avg).toLocaleString()}`;
+                document.getElementById('totalCurrentYear').textContent = this.yen(totalCur);
+                document.getElementById('totalPreviousYear').textContent = this.yen(totalPrev);
+                document.getElementById('averageMonthly').textContent = this.yen(Math.round(avg));
                 const el = document.getElementById('yearlyComparison');
                 el.textContent = `${pct>0?'+':''}${pct.toFixed(1)}%`;
                 el.style.color = pct>0 ? '#e53e3e' : '#38a169';
@@ -278,14 +275,12 @@
             createCategoryChart(category, year) {
                 const ctx = document.getElementById(`${category}Chart`).getContext('2d');
                 if (this.charts[category]) this.charts[category].destroy();
-
                 const cur = [], prev = [];
                 for (let m=1;m<=12;m++) {
                     cur.push(this.data[year]?.[m]?.[category] || 0);
                     prev.push(this.data[year-1]?.[m]?.[category] || 0);
                 }
                 const color = this.categories[category].color;
-
                 this.charts[category] = new Chart(ctx, {
                     type: 'bar',
                     data: {
@@ -299,7 +294,7 @@
                         responsive:true, maintainAspectRatio:false,
                         plugins:{ legend:{ position:'top', labels:{ usePointStyle:true, padding:20 } } },
                         scales:{
-                            y:{ beginAtZero:true, ticks:{ callback:(v)=>'¥'+v.toLocaleString() }, grid:{ color:'#f1f5f9' } },
+                            y:{ beginAtZero:true, ticks:{ callback:(v)=>this.yen(v) }, grid:{ color:'#f1f5f9' } },
                             x:{ grid:{ display:false } }
                         },
                         interaction:{ intersect:false, mode:'index' }
@@ -321,13 +316,13 @@
                     card.className = 'month-card';
 
                     let cls='same', text='前年同月', icon='➡️';
-                    if (cur>prev){ cls='increase'; text=`+¥${(cur-prev).toLocaleString()}`; icon='📈'; }
-                    else if (cur<prev){ cls='decrease'; text=`-¥${(prev-cur).toLocaleString()}`; icon='📉'; }
+                    if (cur>prev){ cls='increase'; text=`+${this.yen(cur-prev)}`; icon='📈'; }
+                    else if (cur<prev){ cls='decrease'; text=`-${this.yen(prev-cur)}`; icon='📉'; }
 
                     card.innerHTML = `
                         <div class="month-name">${this.months[m-1]}</div>
-                        <div class="current-year">¥${cur.toLocaleString()}</div>
-                        <div class="previous-year">前年: ¥${prev.toLocaleString()}</div>
+                        <div class="current-year">${this.yen(cur)}</div>
+                        <div class="previous-year">前年: ${this.yen(prev)}</div>
                         <div class="comparison ${cls}">${icon} ${text}</div>
                     `;
                     container.appendChild(card);
