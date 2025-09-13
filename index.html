@@ -243,43 +243,54 @@
       }
 
       updateSummaryStats(year) {
-        const cur = this.data[year] || {};
+        const cur  = this.data[year]     || {};
         const prev = this.data[year - 1] || {};
 
-        // ① 今年の「データが入っている最後の月」を求める
+        // 今年のデータが入っている最後の月（前年比の基準用：前回と同じ）
         let maxMonth = 0;
         for (let m = 1; m <= 12; m++) {
             if (cur[m] && Object.values(cur[m]).some(v => v !== undefined)) maxMonth = m;
         }
-        if (maxMonth === 0) maxMonth = 12; // 念のため
+        if (maxMonth === 0) maxMonth = 12;
 
-        // ② 画面の合計表示（従来通り：存在する月のみ合計）
+        // ① 合計表示（従来どおり、その年の全月分の合計）
         let totalCurrent = 0, totalPrevious = 0;
         for (let m = 1; m <= 12; m++) {
             if (cur[m])  totalCurrent  += Object.values(cur[m]).reduce((s, v) => s + v, 0);
             if (prev[m]) totalPrevious += Object.values(prev[m]).reduce((s, v) => s + v, 0);
         }
 
-        // ③ 前年比の基準を合わせる（今年のmaxMonthまでで比較）
+        // ② 前年比（今年のデータがある最後の月まで：前回の仕様を踏襲）
         let ytdCurrent = 0, ytdPrevious = 0;
         for (let m = 1; m <= maxMonth; m++) {
             if (cur[m])  ytdCurrent  += Object.values(cur[m]).reduce((s, v) => s + v, 0);
             if (prev[m]) ytdPrevious += Object.values(prev[m]).reduce((s, v) => s + v, 0);
         }
-        const avgMonthly = ytdCurrent / maxMonth; // 平均はYTDベースに寄せるのがおすすめ
         const yearlyChange = ytdPrevious > 0 ? ((ytdCurrent - ytdPrevious) / ytdPrevious * 100) : 0;
 
-        // 表示
+        // ③ 月平均支出：アクセスした“今の月”までで割る（今年以外は 12 ヶ月）
+        const now = new Date();
+        const nowMonth = now.getMonth() + 1;              // 1-12
+        const avgBaseMonths = (year === now.getFullYear()) ? Math.max(1, nowMonth) : 12;
+
+        let sumForAvg = 0;
+        for (let m = 1; m <= avgBaseMonths; m++) {
+            if (cur[m]) sumForAvg += Object.values(cur[m]).reduce((s, v) => s + v, 0);
+        }
+        const averageMonthly = sumForAvg / avgBaseMonths;
+
+        // ---- 表示 ----
         document.getElementById('totalCurrentYear').textContent  = this.yen(totalCurrent);
         document.getElementById('totalPreviousYear').textContent = this.yen(totalPrevious);
-        document.getElementById('averageMonthly').textContent    = this.yen(Math.round(avgMonthly));
+        document.getElementById('averageMonthly').textContent    = this.yen(Math.round(averageMonthly));
 
         const comparisonElement = document.getElementById('yearlyComparison');
         comparisonElement.textContent = `${yearlyChange > 0 ? '+' : ''}${yearlyChange.toFixed(1)}%`;
         comparisonElement.style.color = yearlyChange > 0 ? '#e53e3e' : '#38a169';
 
         document.getElementById('summaryStats').style.display = 'grid';
-      }
+        }
+
 
       createCharts(year){
         Object.keys(this.categories).forEach(cat=>this.createCategoryChart(cat,year));
